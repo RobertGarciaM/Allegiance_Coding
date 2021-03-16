@@ -1,0 +1,55 @@
+ public class InventoryManagementSystem {
+
+	/* Suppose:
+
+	1. We are working with XUnit
+	2. We are using Mock
+	3. We are creating a mock for the services that we wil to test. 
+	4. GetRandomQuantityResponse() always return a valid value.
+	5. CreateRandomQuantity()  always return a valid value.
+	6. CreateAuthToken() always return a valid token
+	7. apiInventoryService.UpdateQuantity(quantity) call the corresponding action controller to updated the quantity, 
+	if the result is success the action controller always return the same value that received.
+	8. apiInventoryService.UpdateQuantity(quantity) has a validation on the value that received, 
+	it should be highter than zero if it's not then the action does not receive the request and throw an error.
+	9. apiInventoryService.UpdateQuantity(quantity) has [Authorize] then if the token is invalid it does not receive the request.
+
+	Note: It's possible to test the previous requeriment that said "As a registered user of an inventory management system", 
+	I mean if the user is register in the system, but it should be part of the authentication module. I suposse we are using the framework with the authorize.*/
+
+        private AuthToken CreateAuthToken() =>
+            new Filler<AuthTokenResponse>().create();
+
+        private long CreateRandomQuantity() =>
+            new Filler<long>().create();
+
+        private long GetRandomQuantityResponse() =>
+            new Filler<long>().create();
+
+
+        [Fact]
+        public async Task ShouldUpdatedAProductQuantity() {
+
+            // GIVEN
+            var apiLibraryServicesMock = new Mock<IApiLibraryServices>();
+            var expectQuantity = GetRandomQuantityResponse();
+            var quantity = CreateRandomQuantity();
+            var token = CreateAuthToken();
+
+            apiLibraryServicesMock.Setup(services =>
+                    services.GetToken(
+                        It.IsAny<TokenRequest>)).ReturnAsync(token);
+
+            apiLibraryServicesMock.Setup(services =>
+                    services.UpdateQuantity(
+                        It.IsAny<long>)).ReturnAsync(expectQuantity);
+            // WHEN
+            var apiInventoryService = new ApiInventoryService(apiLibraryServicesMock.Object);
+
+            var responseQuantity = apiInventoryService.UpdateQuantity(quantity);
+
+
+            // THEN
+            responseQuantity.Should().BeEquivalenTo(expectQuantity, "The expectedQuanty and the responseQuantity should be the same");
+        }
+    }
